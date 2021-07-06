@@ -1,4 +1,4 @@
- #include <avr/delay.h>
+#include <avr/delay.h>
 #include <avr/io.h>
 #include <math.h>
 #include <stdbool.h>
@@ -47,10 +47,10 @@ f32 Q[STATES][NUMBER_OF_ACTIONS] =   {{0.0,0.0,0.0,0.0},  //MOST IMPORTANT OF AL
                                       {0.0,0.0,0.0,0.0}};  //INITIALISED TO ZERO IN THE START
 
 
-/*u16 REWARDS[STATES][NUMBER_OF_ACTIONS] = {{-10,-2,10,8},
+u16 REWARDS[STATES][NUMBER_OF_ACTIONS] = {{-10,-2,10,8},
                                           {-10,-2,10,-10},
                                           {-10,-2,-10,10},
-                                          {-10,10,-10,-10}};*/
+                                          {-10,10,-10,-10}};
 
 
 ////////////////Q LEARNING UPDATE PARAMETERS////////////
@@ -204,7 +204,8 @@ void Update(f32 Q_TABLE[][NUMBER_OF_ACTIONS] , u16 S, u16 NEXT_S, u16 A, u16 ACT
   //pru16f(" Q VALUE : %f", Q_NEW);
   Q_TABLE[S][A] = Q_NEW;
 }
-  //=============================================================================================
+ 
+//=============================================================================================//
 
  bool EEPROM_is_empty()
  {
@@ -223,7 +224,8 @@ void Update(f32 Q_TABLE[][NUMBER_OF_ACTIONS] , u16 S, u16 NEXT_S, u16 A, u16 ACT
 
 	 return empty;
  }
- //=============================================================================================
+
+ //=============================================================================================//
 
  void save_q_table()
  {
@@ -238,7 +240,8 @@ void Update(f32 Q_TABLE[][NUMBER_OF_ACTIONS] , u16 S, u16 NEXT_S, u16 A, u16 ACT
 		 }
 	 }
  }
- //=============================================================================================
+
+ //=============================================================================================//
  void retrive_q_table()
  {
 	 uint16_t loc = 0;
@@ -256,7 +259,7 @@ void Update(f32 Q_TABLE[][NUMBER_OF_ACTIONS] , u16 S, u16 NEXT_S, u16 A, u16 ACT
 /////////////////////////////////////////START OF MAIN LOOP/////////////////////////////////////////////////
 
 //===============================TRAINING===============================//
-void loop()
+void Train()
 { 
   for(u16 I =0; I<EPISODES  ; I++)
   {
@@ -268,10 +271,11 @@ void loop()
 
       forward();
 
-	    Obstacle = Obstacle_Avoider();
+      Obstacle = Obstacle_Avoider();
+	    
       if(Obstacle == 1)
       {
-        getDis(&Front_distance, &Left_distance, &Right_distance);
+        //getDis(&Front_distance, &Left_distance, &Right_distance);
         NEXT_STATE =(STATE+1) % STATES;
         //printf("\nSTATE: %d ",  STATE);
         FLAG = 1;
@@ -301,7 +305,8 @@ void loop()
         forward();
         _delay_ms(1000);
         stop();
-        REWARD = (1 - (Front_distance/distance_MAX)) * (-10);
+        //REWARD = (1 - (Front_distance/distance_MAX)) * (-10);
+	REWARD = REWARDS[STATE][ACTION];      
       }
 
       if(ACTION == 1)
@@ -309,7 +314,8 @@ void loop()
         backward();
         _delay_ms(1000);
         stop();
-        REWARD = -6;
+        //REWARD = -6;
+	REWARD = REWARDS[STATE][ACTION];       
       }
 
       if(ACTION == 2)
@@ -317,7 +323,8 @@ void loop()
         right();
         _delay_ms(1500);
         stop();
-        REWARD = (1 - (Right_distance/distance_MAX)) * (-10);
+        //REWARD = (1 - (Right_distance/distance_MAX)) * (-10);
+	REWARD = REWARDS[STATE][ACTION];       
       }
 
       if(ACTION == 3)
@@ -325,7 +332,8 @@ void loop()
         left();
         _delay_ms(1500);
         stop();
-        REWARD = (1 - (Left_distance/distance_MAX)) * (-10);
+        //REWARD = (1 - (Left_distance/distance_MAX)) * (-10);
+	REWARD = REWARDS[STATE][ACTION];       
       }
 
       ACTION_TAKEN = true;
@@ -341,15 +349,19 @@ void loop()
     
 
     DIO_SetPinValue(PORT2,5,1);
-	  _delay_ms(2000);
-		DIO_SetPinValue(PORT2,5,0);
-		_delay_ms(3000);
+    _delay_ms(2000);
+    DIO_SetPinValue(PORT2,5,0);
+    _delay_ms(3000);
 
 
     }
   }
   save_q_table();
 }
+
+/////////////////////////////////////END OF TRAINING///////////////////////////////////
+
+
 //============================================Testing================================//
 void Test()
 {
@@ -394,71 +406,30 @@ void Test()
 
   }
 }
-/////////////////////////////////////END OF TRAINING///////////////////////////////////
+/////////////////////////////////////END OF TESTING///////////////////////////////////
 
 
 //////////////////////////////////////EVALUATION//////////////////////////////////////////
  /*USE THIS TO CHECK WHETHER YOUR Q VALUES ARE RIGHT OR WRONG. IF ALL Q VALUES ARE
  COMING RIGHT OR SEEMS RIGHT/ACCURATE COMMENT THIS SECTION */
- void Eval()
- {
+void Print_Q_table()
+{
  for(u16 y = 0; y< STATES ; y++)
    {
   //  pru16f("\nSET OF Q VALUES  WILL START:");
     for(u16 l = 0; l < NUMBER_OF_ACTIONS; l++)
       {
-     //   printf("\nQ VALUE : %f", Q[y][l]);
+     	//printf("\nQ VALUE : %f", Q[y][l]);
         //delay(2000);
       }
       //printf("\n");
      //delay(2000);
    }
-  //  printf("\nEVALUATION ENDED");
- }
+  //printf("\nEVALUATION ENDED");
+}
 ////////////////////////////////END OF EVALUATION/////////////////////////////////////////
 
-/*
-////////////////////////////////////////TESTING////////////////////////////////////////////
-while(true)
- {
-  Forward();
-  Obstacle = Obstacle_Avoider();
-  if(Obstacle == true)
-   {
-     STATE = GET_STATE();
-     ACTION = ARGMAX(Q,STATE);
-     Serial.print("ACTION TAKEN: ");
-     Serial.println(ACTION);
-
-     if(ACTION ==0)
-      {
-        Forward();
-        delay(1500);
-        Stop();
-      }
-
-     if(ACTION == 1)
-       {
-        Backward();
-        delay(1500);
-        Stop();
-       }
-     if(ACTION == 2)
-       {
-        Stop();
-       }
-
-     if(ACTION == 3)
-       {
-        Left();
-        delay(2000);
-        Stop();
-       }
-     }
-  }
-  //////////////////////////////////////////////////END OF TESTING////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////END OF MAIN LOOP////////////////////////////////////////////////////////
-*/
 
 
